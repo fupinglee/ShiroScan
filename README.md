@@ -28,13 +28,19 @@
 
 ### 使用
 
-```
+1.自行打包使用
+
+```bash
 git clone https://github.com/fupinglee/ShiroScan
 cd ShiroScan
 mvn clean package -DskipTests=true
 ```
 
 打开target下的jar文件即可执行
+
+2.直接下载使用
+
+https://github.com/fupinglee/ShiroScan/releases
 
 ### 运行效果
 
