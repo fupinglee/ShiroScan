@@ -267,6 +267,11 @@ public class UtilMethod {
 					flag = true;
 				}
 			}
+			if(response.getStatusLine().getStatusCode()==403|| response.getStatusLine().getStatusCode()>500){//有些网站多线程会503，然后就没有Set-Cookie了
+				flag = true;
+			}
+		}else{
+			flag = true;
 		}
 		return flag;
 	}
