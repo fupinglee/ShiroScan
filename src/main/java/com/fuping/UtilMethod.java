@@ -2,6 +2,7 @@ package com.fuping;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -251,6 +252,23 @@ public class UtilMethod {
 			
 		}
 		return f.exists();
+	}
+	public static boolean checkIsShiro(String url){
+		String cookie = "rememberMe=1";
+		return hasDeleteMe(url,cookie);
+	}
+
+	public static boolean hasDeleteMe(String url,String cookie){
+		boolean flag = false;
+		HttpResponse response = UtilMethod.doHttpRequest(url,cookie);
+		if(response != null){
+			for (Header h : response.getAllHeaders()) {
+				if (h.getName().contains("Set-Cookie")&&h.getValue().contains("rememberMe=deleteMe")) {
+					flag = true;
+				}
+			}
+		}
+		return flag;
 	}
 	
 	public static void delFile(String path){
