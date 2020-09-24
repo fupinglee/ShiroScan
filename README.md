@@ -1,8 +1,8 @@
 ## Shiro反序列化检测工具
 
-用于检测存在Shiro反序列化漏洞的key值。有三种方式进行检测，第一种是利用URLDNS进行检测，第二种利用命令执行进行检测，第三种使用`SimplePrincipalCollection`序列化后进行检测（XCheck，即Xray Check）。
+**ShiroScan**用于检测存在Shiro反序列化漏洞的key值。有三种方式进行检测，第一种是利用URLDNS进行检测，第二种利用命令执行进行检测，第三种使用`SimplePrincipalCollection`序列化后进行检测（XCheck，即Xray Check）。
 
-![](images/011.png)
+![](images/07.png)
 
 ### 功能简介
 
@@ -74,7 +74,49 @@ https://github.com/fupinglee/ShiroScan/releases
 
 ![使用自定义XCheck](images/06.png)
 
-### 参考
+
+
+# Shiro反序列化回显工具
+
+### 简介
+
+**ShiroExploit**是Shiro反序列化检测与回显利用工具，ShiroScan是从其中剥离出来的。
+
+https://github.com/fupinglee/JavaTools/tree/master/Shiro#v20
+
+支持Tomcat7、8、9下CMD内存shell的写入与卸载，支持Tomcat6、7、8、9下的通用回显。
+
+### 使用
+
+直接下载使用
+
+1.https://github.com/fupinglee/ShiroScan/releases/tag/v1.1
+
+2.https://github.com/fupinglee/JavaTools/tree/master/Shiro#v20
+
+### 运行效果
+
+**1.回显**
+
+![](images/08.png)
+
+
+
+![](images/09.png)
+
+2.内存Shell
+
+![](images/10.png)
+
+使用正确的密码，会执行命令，错误的密码返回正常页面。
+
+![](images/11.png)
+
+> **使用时需要先确定Key和所使用的Gadget，然后加载内存shell。**
+
+
+
+## 参考
 
 https://github.com/wh1t3p1g/ysoserial
 
@@ -84,7 +126,9 @@ https://github.com/LuckyC4t/shiro-urldns/blob/master/src/main/java/luckycat/shir
 
 https://mp.weixin.qq.com/s/do88_4Td1CSeKLmFqhGCuQ
 
-### 其他
+https://github.com/zema1/ysoserial/[通用回显]
+
+## 其他
 
 **仅供安全人员进行有授权的验证,勿用于非法测试**
 
