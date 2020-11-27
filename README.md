@@ -127,7 +127,7 @@ https://github.com/fupinglee/JavaTools/tree/master/Shiro#v23
 
 
 
-更多使用说明参考:https://github.com/fupinglee/JavaTools/blob/master/Shiro/使用说明-v2.3.pdf
+更多使用说明参考:https://github.com/fupinglee/ShiroScan/blob/master/使用说明-v2.3.pdf
 
 > **使用时需要先确定Key和所使用的Gadget，然后加载内存shell。**
 
